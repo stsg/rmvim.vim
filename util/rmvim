@@ -33,8 +33,9 @@ LHOST=${SSH_CONNECTION%% *}
 RHOST=${SSH_CONNECTION#* }
 RHOST=${RHOST#* }
 RHOST=${RHOST%% *} # Get 3rd argument, separated by spaces
+SPORT=${SSH_CONNECTION##* }
 if [ -z "$RHOST" ]; then
-	RHOST=$HOST
+    RHOST=$HOST
 fi
 
 # MAIN
@@ -42,11 +43,17 @@ if [ $VERBOSE -eq 1 ]; then
     echo "RHOST=$RHOST"
 fi
 
+if [ -z $SPORT ]; then
+    CONN="open:scp://$RHOST/$FILEPATH"
+else
+    CONN="open:scp://$RHOST:$SPORT/$FILEPATH"
+fi
+
 if which nc > /dev/null; then
-    echo -e "open:scp://$RHOST/$FILEPATH" | nc "$HOST" "$PORT"
+    echo -e $CONN | nc "$HOST" "$PORT"
 else
     exec 3<>/dev/tcp/$HOST/$PORT # Open tcp connection and assign fd 3 to it
-    echo -e "open:scp://$RHOST/$FILEPATH" >&3
+    echo -e $CONN >&3
     exec 3>&- # Close fd 3
 fi
 
